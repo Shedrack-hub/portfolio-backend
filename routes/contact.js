@@ -1,41 +1,51 @@
 import express from "express";
-import { contactLimiter } from "../middleware/rateLimiter.js";
-import { validateContact } from "../utils/validate.js";
 import { transporter } from "../config/mailer.js";
 
 const router = express.Router();
 
-router.post("/", contactLimiter, async (req, res) => {
+router.post("/", async (req, res) => {
   try {
-    const { name, email, message, company } = req.body;
+    const { name, email, message } = req.body;
 
-    const error = validateContact({ name, email, message, company });
-
-    if (error) {
-      return res.status(400).json({ success: false, message: error });
+    // Validation
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required"
+      });
     }
 
+    // Check env
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      return res.status(500).json({
+        success: false,
+        message: "Email configuration missing"
+      });
+    }
+
+    // Send email
     await transporter.sendMail({
-      from: `"Portfolio Contact" <${process.env.EMAIL_USER}>`,
+      from: `"Portfolio" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       replyTo: email,
       subject: `New message from ${name}`,
       text: `
 Name: ${name}
 Email: ${email}
-
-Message:
-${message}
-      `,
+Message: ${message}
+      `
     });
 
-    res.json({ success: true });
+    return res.json({
+      success: true,
+      message: "Message sent successfully"
+    });
 
-  } catch (err) {
-    console.log("EMAIL ERROR:", err);
-    res.status(500).json({
+  } catch (error) {
+    console.log("EMAIL ERROR:", error);
+    return res.status(500).json({
       success: false,
-      message: "Failed to send message",
+      message: "Failed to send message"
     });
   }
 });

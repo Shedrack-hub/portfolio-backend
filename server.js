@@ -9,24 +9,29 @@ dotenv.config();
 
 const app = express();
 
+// Security
 app.use(helmet());
 
+// CORS (PRODUCTION FIXED)
 app.use(cors({
   origin: [
-    "http://localhost:5173",
-    "http://127.0.0.1:5501",
-    "https://portfolio-frontend-two-nu.vercel.app/"
-  ]
+    "https://portfolio-frontend-two-nu.vercel.app"
+  ],
+  methods: ["GET", "POST"],
+  credentials: true
 }));
 
 app.use(express.json());
 
+// Health check
 app.get("/", (req, res) => {
-  res.send("API running");
+  res.send("API is running...");
 });
 
+// Routes
 app.use("/api/contact", contactRoute);
 
+// Server
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
